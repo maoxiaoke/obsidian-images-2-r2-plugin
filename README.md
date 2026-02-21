@@ -1,56 +1,41 @@
 # Images → R2
 
-An Obsidian plugin that uploads local images in the current note to a Cloudflare R2 bucket, and optionally replaces `![[wiki links]]` with public markdown image URLs.
+An Obsidian plugin for managing images between your vault and Cloudflare R2.
 
-## Features
+## What it does
 
-- One-click upload via ribbon icon or command palette
-- Operates on the **current active note only**
-- Targets `![[image.ext]]` wiki-link syntax for local images
-- Supports PNG, JPG, JPEG, GIF, WebP, SVG, BMP, ICO, TIFF
-- Optional: replace wiki links with public R2 URLs after upload
+**Local images** — finds `![[image.ext]]` wiki-links in the current note, uploads them to R2, and replaces the link with a public URL.
+
+**Remote images** — finds `![](https://...)` links in the current note and downloads them into your vault, replacing the link with a local wiki-link. Images are labelled **R2** or **Ext** so you can tell where they come from.
 
 ## Setup
 
-### 1. Cloudflare credentials
-
-You need:
-
-- **Account ID** — found on the Cloudflare dashboard sidebar
-- **R2 API Token** — create one at `R2 > Manage R2 API Tokens` with **Workers R2 Storage: Edit** permission
-- **Bucket name** — the R2 bucket to upload images into
-
-### 2. Public URL (optional)
-
-To have the plugin replace local links with public URLs, enable **Use Custom Domain** in settings and provide the base URL for your bucket. This can be:
-
-- A custom domain you've configured on the bucket (e.g. `https://cdn.example.com`)
-- The managed r2.dev public URL (e.g. `https://pub-xxxx.r2.dev`)
+1. Go to **Settings → Images → R2**
+2. Fill in your Cloudflare **Account ID**, **R2 API Token** (needs *Workers R2 Storage: Edit*), and **Bucket Name**
+3. Optionally set a **Custom Domain** (e.g. `https://cdn.example.com`). If left empty, the bucket's managed `r2.dev` domain is used automatically
 
 ## Usage
 
-1. Open a note containing `![[image.png]]` references
-2. Click the **upload** icon in the left ribbon, or run the command **"Upload images in current file to R2"** from the command palette
-3. The plugin uploads each local image to your R2 bucket
-4. If **Use Custom Domain** is enabled, each `![[image.png]]` is replaced with `![image.png](https://your-domain/image.png)`
+Open the panel from the ribbon icon or command palette. Click a row to jump to the image in the editor. Upload or download individual items, or use the toolbar buttons to process all at once.
 
 ## Settings
 
 | Setting | Description |
 |---|---|
-| Account ID | Your Cloudflare Account ID |
+| Account ID | Cloudflare account ID |
 | R2 API Token | API token with R2 Edit permission |
 | Bucket Name | Target R2 bucket |
-| Use Custom Domain | Replace local links with public URLs after upload |
-| Custom Domain | Base URL for uploaded images (shown when toggle is on) |
+| Custom Domain | Base URL for uploaded images (optional) |
+| Download folder | Where to save downloaded images (defaults to Obsidian's attachment folder) |
+
+## Records
+
+Every upload and download is logged to `.obsidian/images-r2-records.json`. This file is outside the plugin folder and will not be deleted if you uninstall the plugin. You can copy the path or open the file from the settings page.
 
 ## Development
 
 ```bash
 npm i
-npm run dev      # watch mode
-npm run build    # production build
-npm run lint     # lint
+npm run dev    # watch
+npm run build  # production
 ```
-
-Requires Node.js 16+.
