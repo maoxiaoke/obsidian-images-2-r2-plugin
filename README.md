@@ -10,8 +10,8 @@ An Obsidian plugin for managing images between your vault and Cloudflare R2.
 
 ## Installation
 
-1. Download `main.js`, `manifest.json`, and `styles.css` from the [latest release](../../releases/latest)
-2. Copy them into `{vault}/.obsidian/plugins/obsidian-images-2-r2/`
+1. Download [`main.js`](../../raw/master/main.js), [`manifest.json`](../../raw/master/manifest.json), and [`styles.css`](../../raw/master/styles.css)
+2. Create a folder `{vault}/.obsidian/plugins/obsidian-images-2-r2/` and put the three files inside
 3. Reload Obsidian and enable the plugin under **Settings → Community plugins**
 
 ## Setup
