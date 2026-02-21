@@ -8,6 +8,12 @@ An Obsidian plugin for managing images between your vault and Cloudflare R2.
 
 **Remote images** — finds `![](https://...)` links in the current note and downloads them into your vault, replacing the link with a local wiki-link. Images are labelled **R2** or **Ext** so you can tell where they come from.
 
+## Installation
+
+1. Download `main.js`, `manifest.json`, and `styles.css` from the [latest release](../../releases/latest)
+2. Copy them into `{vault}/.obsidian/plugins/obsidian-images-2-r2/`
+3. Reload Obsidian and enable the plugin under **Settings → Community plugins**
+
 ## Setup
 
 1. Go to **Settings → Images → R2**
