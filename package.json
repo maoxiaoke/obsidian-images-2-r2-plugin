@@ -1,7 +1,7 @@
 {
-	"name": "obsidian-sample-plugin",
+	"name": "obsidian-images-2-r2",
 	"version": "1.0.0",
-	"description": "This is a sample plugin for Obsidian (https://obsidian.md)",
+	"description": "Upload local images in the current note to a Cloudflare R2 bucket and optionally replace wiki links with public URLs.",
 	"main": "main.js",
 	"type": "module",
 	"scripts": {

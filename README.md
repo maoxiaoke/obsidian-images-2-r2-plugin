@@ -1,90 +1,56 @@
-# Obsidian Sample Plugin
+# Images → R2
 
-This is a sample plugin for Obsidian (https://obsidian.md).
+An Obsidian plugin that uploads local images in the current note to a Cloudflare R2 bucket, and optionally replaces `![[wiki links]]` with public markdown image URLs.
 
-This project uses TypeScript to provide type checking and documentation.
-The repo depends on the latest plugin API (obsidian.d.ts) in TypeScript Definition format, which contains TSDoc comments describing what it does.
+## Features
 
-This sample plugin demonstrates some of the basic functionality the plugin API can do.
-- Adds a ribbon icon, which shows a Notice when clicked.
-- Adds a command "Open modal (simple)" which opens a Modal.
-- Adds a plugin setting tab to the settings page.
-- Registers a global click event and output 'click' to the console.
-- Registers a global interval which logs 'setInterval' to the console.
+- One-click upload via ribbon icon or command palette
+- Operates on the **current active note only**
+- Targets `![[image.ext]]` wiki-link syntax for local images
+- Supports PNG, JPG, JPEG, GIF, WebP, SVG, BMP, ICO, TIFF
+- Optional: replace wiki links with public R2 URLs after upload
 
-## First time developing plugins?
+## Setup
 
-Quick starting guide for new plugin devs:
+### 1. Cloudflare credentials
 
-- Check if [someone already developed a plugin for what you want](https://obsidian.md/plugins)! There might be an existing plugin similar enough that you can partner up with.
-- Make a copy of this repo as a template with the "Use this template" button (login to GitHub if you don't see it).
-- Clone your repo to a local development folder. For convenience, you can place this folder in your `.obsidian/plugins/your-plugin-name` folder.
-- Install NodeJS, then run `npm i` in the command line under your repo folder.
-- Run `npm run dev` to compile your plugin from `main.ts` to `main.js`.
-- Make changes to `main.ts` (or create new `.ts` files). Those changes should be automatically compiled into `main.js`.
-- Reload Obsidian to load the new version of your plugin.
-- Enable plugin in settings window.
-- For updates to the Obsidian API run `npm update` in the command line under your repo folder.
+You need:
 
-## Releasing new releases
+- **Account ID** — found on the Cloudflare dashboard sidebar
+- **R2 API Token** — create one at `R2 > Manage R2 API Tokens` with **Workers R2 Storage: Edit** permission
+- **Bucket name** — the R2 bucket to upload images into
 
-- Update your `manifest.json` with your new version number, such as `1.0.1`, and the minimum Obsidian version required for your latest release.
-- Update your `versions.json` file with `"new-plugin-version": "minimum-obsidian-version"` so older versions of Obsidian can download an older version of your plugin that's compatible.
-- Create new GitHub release using your new version number as the "Tag version". Use the exact version number, don't include a prefix `v`. See here for an example: https://github.com/obsidianmd/obsidian-sample-plugin/releases
-- Upload the files `manifest.json`, `main.js`, `styles.css` as binary attachments. Note: The manifest.json file must be in two places, first the root path of your repository and also in the release.
-- Publish the release.
+### 2. Public URL (optional)
 
-> You can simplify the version bump process by running `npm version patch`, `npm version minor` or `npm version major` after updating `minAppVersion` manually in `manifest.json`.
-> The command will bump version in `manifest.json` and `package.json`, and add the entry for the new version to `versions.json`
+To have the plugin replace local links with public URLs, enable **Use Custom Domain** in settings and provide the base URL for your bucket. This can be:
 
-## Adding your plugin to the community plugin list
+- A custom domain you've configured on the bucket (e.g. `https://cdn.example.com`)
+- The managed r2.dev public URL (e.g. `https://pub-xxxx.r2.dev`)
 
-- Check the [plugin guidelines](https://docs.obsidian.md/Plugins/Releasing/Plugin+guidelines).
-- Publish an initial version.
-- Make sure you have a `README.md` file in the root of your repo.
-- Make a pull request at https://github.com/obsidianmd/obsidian-releases to add your plugin.
+## Usage
 
-## How to use
+1. Open a note containing `![[image.png]]` references
+2. Click the **upload** icon in the left ribbon, or run the command **"Upload images in current file to R2"** from the command palette
+3. The plugin uploads each local image to your R2 bucket
+4. If **Use Custom Domain** is enabled, each `![[image.png]]` is replaced with `![image.png](https://your-domain/image.png)`
 
-- Clone this repo.
-- Make sure your NodeJS is at least v16 (`node --version`).
-- `npm i` or `yarn` to install dependencies.
-- `npm run dev` to start compilation in watch mode.
+## Settings
 
-## Manually installing the plugin
+| Setting | Description |
+|---|---|
+| Account ID | Your Cloudflare Account ID |
+| R2 API Token | API token with R2 Edit permission |
+| Bucket Name | Target R2 bucket |
+| Use Custom Domain | Replace local links with public URLs after upload |
+| Custom Domain | Base URL for uploaded images (shown when toggle is on) |
 
-- Copy over `main.js`, `styles.css`, `manifest.json` to your vault `VaultFolder/.obsidian/plugins/your-plugin-id/`.
+## Development
 
-## Improve code quality with eslint
-- [ESLint](https://eslint.org/) is a tool that analyzes your code to quickly find problems. You can run ESLint against your plugin to find common bugs and ways to improve your code. 
-- This project already has eslint preconfigured, you can invoke a check by running`npm run lint`
-- Together with a custom eslint [plugin](https://github.com/obsidianmd/eslint-plugin) for Obsidan specific code guidelines.
-- A GitHub action is preconfigured to automatically lint every commit on all branches.
-
-## Funding URL
-
-You can include funding URLs where people who use your plugin can financially support it.
-
-The simple way is to set the `fundingUrl` field to your link in your `manifest.json` file:
-
-```json
-{
-    "fundingUrl": "https://buymeacoffee.com"
-}
+```bash
+npm i
+npm run dev      # watch mode
+npm run build    # production build
+npm run lint     # lint
 ```
 
-If you have multiple URLs, you can also do:
-
-```json
-{
-    "fundingUrl": {
-        "Buy Me a Coffee": "https://buymeacoffee.com",
-        "GitHub Sponsor": "https://github.com/sponsors",
-        "Patreon": "https://www.patreon.com/"
-    }
-}
-```
-
-## API Documentation
-
-See https://docs.obsidian.md
+Requires Node.js 16+.

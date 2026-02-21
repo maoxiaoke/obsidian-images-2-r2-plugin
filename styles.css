@@ -1,8 +1,98 @@
-/*
+/* ── Empty state ─────────────────────────────────── */
+.r2-empty {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 8px;
+	padding: 32px 16px;
+}
 
-This CSS file will be included with your plugin, and
-available in the app when your plugin is enabled.
+.r2-empty-icon {
+	display: flex;
+	color: var(--text-faint);
+}
 
-If your plugin does not need CSS, delete this file.
+.r2-empty-icon svg {
+	width: 24px;
+	height: 24px;
+}
 
-*/
+.r2-empty-text {
+	font-size: var(--font-ui-small);
+	color: var(--text-faint);
+	text-align: center;
+}
+
+/* ── Row — missing file name ─────────────────────── */
+.r2-name-missing {
+	color: var(--text-faint);
+	font-style: italic;
+}
+
+/* ── Row error text ──────────────────────────────── */
+.r2-row-error {
+	font-size: 0.76em;
+	color: var(--color-red);
+	padding: 0 10px 4px 36px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+/* ── Origin badge (R2 / Ext) ─────────────────────── */
+.r2-origin-badge {
+	flex-shrink: 0;
+	font-size: 0.68em;
+	font-weight: 600;
+	letter-spacing: 0.03em;
+	padding: 1px 5px;
+	border-radius: var(--radius-s);
+	line-height: 1.6;
+}
+
+.r2-origin-r2  { background: var(--color-blue-rgb, 59 130 246 / 0.15); color: var(--color-blue); }
+.r2-origin-ext { background: var(--background-modifier-border); color: var(--text-faint); }
+
+/* ── Row alignment ───────────────────────────────── */
+.r2-row-idle,
+.r2-row-uploading,
+.r2-row-done,
+.r2-row-failed {
+	display: flex;
+	align-items: center;
+}
+
+/* ── Tools area (right side of each row) ────────── */
+.r2-tools {
+	margin-left: auto;
+	flex-shrink: 0;
+	display: flex;
+	align-items: center;
+	gap: 2px;
+}
+
+/* ── Spinner ─────────────────────────────────────── */
+.r2-spinning {
+	display: inline-flex;
+	align-items: center;
+	color: var(--color-blue);
+}
+
+.r2-spinning svg {
+	width: 14px;
+	height: 14px;
+	animation: r2-spin 0.8s linear infinite;
+}
+
+@keyframes r2-spin {
+	to { transform: rotate(360deg); }
+}
+
+/* ── Status icons ────────────────────────────────── */
+.r2-status-icon {
+	display: inline-flex;
+	align-items: center;
+}
+
+.r2-status-done svg  { width: 14px; height: 14px; color: var(--color-green); }
+.r2-status-failed svg { width: 14px; height: 14px; color: var(--color-red); }

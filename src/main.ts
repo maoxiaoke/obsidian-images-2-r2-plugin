@@ -1,99 +1,171 @@
-import {App, Editor, MarkdownView, Modal, Notice, Plugin} from 'obsidian';
-import {DEFAULT_SETTINGS, MyPluginSettings, SampleSettingTab} from "./settings";
+import {MarkdownView, Menu, Plugin, TAbstractFile, TFile, requestUrl} from 'obsidian';
+import {DEFAULT_SETTINGS, ImagesR2Settings, ImagesR2SettingTab} from './settings';
+import {R2UploaderView, VIEW_TYPE_R2} from './view';
+import {RecordsManager} from './records';
 
-// Remember to rename these classes and interfaces!
+const MIME_TYPES: Record<string, string> = {
+	'png': 'image/png',
+	'jpg': 'image/jpeg',
+	'jpeg': 'image/jpeg',
+	'gif': 'image/gif',
+	'webp': 'image/webp',
+	'svg': 'image/svg+xml',
+	'bmp': 'image/bmp',
+	'ico': 'image/x-icon',
+	'tiff': 'image/tiff',
+	'tif': 'image/tiff',
+};
 
-export default class MyPlugin extends Plugin {
-	settings: MyPluginSettings;
+export default class ImagesR2Plugin extends Plugin {
+	settings: ImagesR2Settings;
+	records: RecordsManager;
 
 	async onload() {
 		await this.loadSettings();
+		this.records = new RecordsManager(this.app);
 
-		// This creates an icon in the left ribbon.
-		this.addRibbonIcon('dice', 'Sample', (evt: MouseEvent) => {
-			// Called when the user clicks the icon.
-			new Notice('This is a notice!');
-		});
+		this.registerView(VIEW_TYPE_R2, (leaf) => new R2UploaderView(leaf, this));
 
-		// This adds a status bar item to the bottom of the app. Does not work on mobile apps.
-		const statusBarItemEl = this.addStatusBarItem();
-		statusBarItemEl.setText('Status bar text');
+		this.addRibbonIcon('aperture', 'Images → R2', () => this.activateView());
 
-		// This adds a simple command that can be triggered anywhere
+		// Restore the panel if it was open in the previous session, or open it for the first time
+		this.app.workspace.onLayoutReady(() => this.activateView());
+
+		// File menu (··· on note tab / file explorer)
+		this.registerEvent(
+			this.app.workspace.on('file-menu', (menu: Menu, file: TAbstractFile) => {
+				if (!(file instanceof TFile) || file.extension !== 'md') return;
+				menu.addItem((item) => {
+					item.setTitle('Upload images to R2').setIcon('upload').onClick(() => this.activateView());
+				});
+			})
+		);
+
+		// Editor right-click context menu
+		this.registerEvent(
+			this.app.workspace.on('editor-menu', (menu: Menu) => {
+				menu.addItem((item) => {
+					item.setTitle('Upload images to R2').setIcon('upload').onClick(() => this.activateView());
+				});
+			})
+		);
+
 		this.addCommand({
-			id: 'open-modal-simple',
-			name: 'Open modal (simple)',
-			callback: () => {
-				new SampleModal(this.app).open();
-			}
-		});
-		// This adds an editor command that can perform some operation on the current editor instance
-		this.addCommand({
-			id: 'replace-selected',
-			name: 'Replace selected content',
-			editorCallback: (editor: Editor, view: MarkdownView) => {
-				editor.replaceSelection('Sample editor command');
-			}
-		});
-		// This adds a complex command that can check whether the current state of the app allows execution of the command
-		this.addCommand({
-			id: 'open-modal-complex',
-			name: 'Open modal (complex)',
-			checkCallback: (checking: boolean) => {
-				// Conditions to check
-				const markdownView = this.app.workspace.getActiveViewOfType(MarkdownView);
-				if (markdownView) {
-					// If checking is true, we're simply "checking" if the command can be run.
-					// If checking is false, then we want to actually perform the operation.
-					if (!checking) {
-						new SampleModal(this.app).open();
-					}
-
-					// This command will only show up in Command Palette when the check function returns true
-					return true;
-				}
-				return false;
-			}
+			id: 'open-r2-uploader',
+			name: 'Open R2 uploader panel',
+			callback: () => this.activateView(),
 		});
 
-		// This adds a settings tab so the user can configure various aspects of the plugin
-		this.addSettingTab(new SampleSettingTab(this.app, this));
-
-		// If the plugin hooks up any global DOM events (on parts of the app that doesn't belong to this plugin)
-		// Using this function will automatically remove the event listener when this plugin is disabled.
-		this.registerDomEvent(document, 'click', (evt: MouseEvent) => {
-			new Notice("Click");
-		});
-
-		// When registering intervals, this function will automatically clear the interval when the plugin is disabled.
-		this.registerInterval(window.setInterval(() => console.log('setInterval'), 5 * 60 * 1000));
-
+		this.addSettingTab(new ImagesR2SettingTab(this.app, this));
 	}
 
 	onunload() {
+		this.app.workspace.detachLeavesOfType(VIEW_TYPE_R2);
 	}
 
 	async loadSettings() {
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData() as Partial<MyPluginSettings>);
+		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData() as Partial<ImagesR2Settings>);
 	}
 
 	async saveSettings() {
 		await this.saveData(this.settings);
 	}
-}
 
-class SampleModal extends Modal {
-	constructor(app: App) {
-		super(app);
+	async activateView() {
+		const existing = this.app.workspace.getLeavesOfType(VIEW_TYPE_R2);
+		if (existing.length && existing[0]) {
+			this.app.workspace.revealLeaf(existing[0]);
+			return;
+		}
+		const leaf = this.app.workspace.getRightLeaf(false);
+		if (leaf) {
+			await leaf.setViewState({type: VIEW_TYPE_R2, active: true});
+			this.app.workspace.revealLeaf(leaf);
+		}
 	}
 
-	onOpen() {
-		let {contentEl} = this;
-		contentEl.setText('Woah!');
+	private async fetchManagedDomain(accountId: string, r2Token: string, bucketName: string): Promise<string | null> {
+		try {
+			const response = await requestUrl({
+				url: `https://api.cloudflare.com/client/v4/accounts/${accountId}/r2/buckets/${bucketName}/domains/managed`,
+				method: 'GET',
+				headers: {'Authorization': `Bearer ${r2Token}`},
+				throw: false,
+			});
+			if (response.status !== 200) return null;
+			const domain = response.json?.result?.domain as string | undefined;
+			return domain ? `https://${domain}` : null;
+		} catch {
+			return null;
+		}
 	}
 
-	onClose() {
-		const {contentEl} = this;
-		contentEl.empty();
+	async resolveBaseUrl(): Promise<string | null> {
+		const {accountId, r2Token, bucketName, customDomain} = this.settings;
+		if (customDomain) return customDomain;
+		if (!accountId || !r2Token || !bucketName) return null;
+		return this.fetchManagedDomain(accountId, r2Token, bucketName);
+	}
+
+	resolveImageFile(imagePath: string, activeFile: TFile): TFile | null {
+		const resolved = this.app.metadataCache.getFirstLinkpathDest(imagePath, activeFile.path);
+		if (resolved instanceof TFile) return resolved;
+		const fileName = imagePath.split('/').pop() ?? imagePath;
+		return this.app.vault.getFiles().find((f: TFile) => f.name === fileName) ?? null;
+	}
+
+	async uploadImageFile(imageFile: TFile, baseUrl: string): Promise<{success: true; publicUrl: string} | {success: false; error: string}> {
+		const {accountId, r2Token, bucketName} = this.settings;
+		if (!accountId || !r2Token || !bucketName) {
+			return {success: false, error: 'Missing configuration'};
+		}
+
+		try {
+			const fileBuffer = await this.app.vault.readBinary(imageFile);
+			const mimeType = MIME_TYPES[imageFile.extension.toLowerCase()] ?? 'application/octet-stream';
+			const fileName = imageFile.name;
+
+			let response;
+			try {
+				response = await requestUrl({
+					url: `https://api.cloudflare.com/client/v4/accounts/${accountId}/r2/buckets/${bucketName}/objects/${encodeURIComponent(fileName)}`,
+					method: 'PUT',
+					headers: {
+						'Authorization': `Bearer ${r2Token}`,
+						'Content-Type': mimeType,
+					},
+					body: fileBuffer,
+					throw: false,
+				});
+			} catch (networkErr) {
+				return {success: false, error: (networkErr as Error).message};
+			}
+
+			if (response.status !== 200) {
+				let errMsg = `HTTP ${response.status}`;
+				try { errMsg = response.json?.errors?.[0]?.message ?? errMsg; } catch { /* not JSON */ }
+				return {success: false, error: errMsg};
+			}
+
+			let data;
+			try { data = response.json; } catch {
+				return {success: false, error: 'Invalid response'};
+			}
+
+			if (!data?.success) {
+				return {success: false, error: data?.errors?.[0]?.message ?? 'Unknown error'};
+			}
+
+			return {success: true, publicUrl: `${baseUrl}/${encodeURIComponent(fileName)}`};
+		} catch (err) {
+			return {success: false, error: (err as Error).message};
+		}
+	}
+
+	// Keep for the command palette upload-all shortcut
+	async uploadAllInCurrentFile() {
+		const markdownView = this.app.workspace.getActiveViewOfType(MarkdownView);
+		if (!markdownView?.file) return;
+		await this.activateView();
 	}
 }
